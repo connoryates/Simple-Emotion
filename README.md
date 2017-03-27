@@ -57,7 +57,7 @@ or, if you already have an access token, you can set:
 
 Simple::Emotion is wrapper around api.simpleemotion.com - an API capable of detecting emotions from audio recordings.
 
-[Official documentation here.](https://api.simpleemotion.com/docs/storage/v0.html)
+[Official API documentation here.](https://api.simpleemotion.com/docs/storage/v0.html)
 
 ### Note:
 
