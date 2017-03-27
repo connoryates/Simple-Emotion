@@ -5,7 +5,9 @@
 package Simple::Emotion;
 use Moo;
 with 'Simple::Emotion::OAuth',
-     'Simple::Emotion::Storage';
+     'Simple::Emotion::Storage',
+     'Simple::Emotion::Speech',
+     'Simple::Emotion::Operation';
 
 use 5.008_005;
 our $VERSION = '0.01';
@@ -99,7 +101,9 @@ has http_request => ( is => 'lazy', clearer => 1 );
 
 has url => ( is => 'ro', lazy => 1, default => sub { shift->uri->as_string } );
 
-has content => ( is => 'rw', clearer => 1 );
+has content         => ( is => 'rw', clearer => 1 );
+has callback_url    => ( is => 'rw' );
+has callback_secret => ( is => 'rw' );
 
 sub _build_base       { return URI->new(BASE_URL) }
 sub _build_user_agent { return Furl->new }
