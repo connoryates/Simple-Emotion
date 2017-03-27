@@ -1,6 +1,6 @@
 # NAME
 
-Simple::Emotion - Client for api.simpleemotion.co,
+Simple::Emotion - Client for api.simpleemotion.com.
 
 # SYNOPSIS
 
