@@ -1,43 +1,43 @@
 # NAME
 
-Simple::Emotion::API - Transcribe and detect emotions from call recordings
+Simple::Emotion - Client for api.simpleemotion.co,
 
 # SYNOPSIS
 
 With pre-authorization:
 
 ```perl
-    use Simple::Emotion::API;
-    
-    my $e = Simple::Emotion::API->new(
-        client_id     => $CLIENT_ID,
-        client_secret => $CLIENT_SECRET,
-        scope         => 'transcribe',
-        pre_auth      => 1
-    );
-    
-    my $resp = $e->upload_from_url('http://url-with-audio-file');
-    my $id   = $resp->id;
-    
-    $e->audio_id($id);
-    
-    my $analysis = $e->analyze;
-    
-    # -- OR --
-    
-    my $analysis = $e->analyze({ audio_id => $id });
+use Simple::Emotion;
+
+my $e = Simple::Emotion->new(
+    client_id     => $CLIENT_ID,
+    client_secret => $CLIENT_SECRET,
+    scope         => 'transcribe',
+    pre_auth      => 1
+);
+
+my $resp = $e->upload_from_url('http://url-with-audio-file');
+my $id   = $resp->id;
+
+$e->audio_id($id);
+
+my $analysis = $e->analyze;
+
+# -- OR --
+
+my $analysis = $e->analyze({ audio_id => $id });
 ```
 
 Without pre-authorization:
 
 ```perl
-     my $e = Simple::Emotion::API->new(
-        client_id     => $CLIENT_ID,
-        client_secret => $CLIENT_SECRET,
-        scope         => 'transcribe',
-    );
-    
-    $e->authorize;
+ my $e = Simple::Emotion->new(
+    client_id     => $CLIENT_ID,
+    client_secret => $CLIENT_SECRET,
+    scope         => 'transcribe',
+);
+
+$e->authorize;
     
 ```
 
@@ -45,7 +45,13 @@ You can also set your ```client_id``` and ```client_secret``` in your ```$ENV```
 
 # DESCRIPTION
 
-Simple::Emotion::API is wrapper around api.simpleemotion.com
+Simple::Emotion is wrapper around api.simpleemotion.com - an API capable of detecting emotions from audio recordings.
+
+[Official documentation.](https://api.simpleemotion.com/docs/storage/v0.html)
+
+### Note:
+
+This API is in v0, so breaking changes will occur
 
 # Constructor
 
@@ -69,11 +75,11 @@ Automatically get an ```access_token``` when before you make a request
 
 ## audio_id
 
-You can construct a ```Simple::Emotion::API``` object with an ```audio_id```, set it later, or pass it as an arg to a method. 
+You can construct a ```Simple::Emotion``` object with an ```audio_id```, set it later, or pass it as an arg to a method. 
 In all cases, the ```audio_id``` ends up as an attribute:
 
 ```perl
-my $e = Simple::Emotion::API->new(
+my $e = Simple::Emotion->new(
     client_id      => $CLIENT_ID,
     client_secrent => $CLIENT_SECRET,
     scope          => 'transcribe',

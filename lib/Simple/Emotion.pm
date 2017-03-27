@@ -191,9 +191,15 @@ sub _create_request {
 sub _extract_id {
     my $self = shift;
 
-    if (ref $self->content and ref $self->content eq 'HASH') {
-        while (my ($k, $v) = each %{ $self->content }) {
-            # TODO
+    my $content = $self->content;
+
+    if (ref $content and ref $content eq 'HASH') {
+        while (my ($k, $v) = each %{ $content }) {
+            if (first { $_ =~ /$k_id/ } $self->meta->get_attribute_list) {
+                if (ref $v and ref $v eq 'HASH') {
+                    return $v->{_id} if $v->{_id};
+                }
+            }
         }
     }
 
