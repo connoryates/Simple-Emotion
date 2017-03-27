@@ -21,11 +21,11 @@ my $id   = $resp->id;
 
 $e->audio_id($id);
 
-my $analysis = $e->analyze;
+my $audio = $e->get_audio;
 
 # -- OR --
 
-my $analysis = $e->analyze({ audio_id => $id });
+my $audio = $e->get_audio({ audio_id => $id });
 ```
 
 Without pre-authorization:
@@ -78,13 +78,13 @@ Your ```client_secret```
 The scope of your workflow, as provided by the API specs. You can also use some handy aliases for common workflows:
 
 ```perl
-transcribe => [
+transcribe => [qw(
     storage.audio.uploadFromUrl
     operations.get
     speech.transcribe
     storage.analysis.get
     storage.audio.add
-]
+)];
 ```
 
 ## pre_auth

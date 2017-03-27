@@ -35,7 +35,7 @@ has scope => (
     is      => 'rw',
     default => sub { [] },
     coerce  => sub {
-        return $Simple::Emotion::Constants::TRANSCRIPTION_FLOW
+        return $Simple::Emotion::Constants::TRANSCRIPTION_FLOW_SIMPLE
           if $_[0] eq 'transcription';
 
         $_[0];
@@ -195,7 +195,9 @@ sub _extract_id {
 
     if (ref $content and ref $content eq 'HASH') {
         while (my ($k, $v) = each %{ $content }) {
-            if (first { $_ =~ /$k_id/ } $self->meta->get_attribute_list) {
+            my $id = $k . '_id';
+
+            if (first { $_ =~ /$id/ } $self->meta->get_attribute_list) {
                 if (ref $v and ref $v eq 'HASH') {
                     return $v->{_id} if $v->{_id};
                 }

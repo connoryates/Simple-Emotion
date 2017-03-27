@@ -15,7 +15,7 @@ has get_download_enpoint => ( is => 'rw', default => sub { '/getDownloadUrl' } )
 
 our @AUDIO_STORAGE_METHODS = qw(
     upload_from_url add_audio
-    get_from_url    list_audio get_audio
+    list_audio      get_audio
     get_upload_url  audio_exists
     move_audio      remove_audio
     get_upload_url  get_download_url
@@ -46,7 +46,7 @@ sub upload_from_url {
 sub list_audio {
     my $self = shift;
 
-    $self->_create_request($self->list_audio_endpoint, POST);
+    $self->_create_request($self->list_endpoint, POST);
 }
 
 sub get_audio {
