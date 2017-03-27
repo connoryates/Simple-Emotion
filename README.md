@@ -41,13 +41,23 @@ $e->authorize;
     
 ```
 
-You can also set your ```client_id``` and ```client_secret``` in your ```$ENV``` as ```SIMPLE_EMOTION_CLIENT_ID``` and ```SIMPLE_EMOTION_CLIENT_SECRET``` or, if you already have an access token, you can set ```SIMPLE_EMOTION_ACCESS_KEY```
+You can also set your ```client_id``` and ```client_secret``` in your ```$ENV``` as:
+
+```SIMPLE_EMOTION_CLIENT_ID```
+
+and
+
+```SIMPLE_EMOTION_CLIENT_SECRET```
+
+or, if you already have an access token, you can set:
+
+```SIMPLE_EMOTION_ACCESS_TOKEN```
 
 # DESCRIPTION
 
 Simple::Emotion is wrapper around api.simpleemotion.com - an API capable of detecting emotions from audio recordings.
 
-[Official documentation.](https://api.simpleemotion.com/docs/storage/v0.html)
+[Official documentation here.](https://api.simpleemotion.com/docs/storage/v0.html)
 
 ### Note:
 
@@ -67,16 +77,24 @@ Your ```client_secret```
 
 The scope of your workflow, as provided by the API specs. You can also use some handy aliases for common workflows:
 
-```transcribe``` => ```storage.audio.uploadFromUrl operations.get speech.transcribe storage.analysis.get storage.audio.add```
+```perl
+transcribe => [
+    storage.audio.uploadFromUrl
+    operations.get
+    speech.transcribe
+    storage.analysis.get
+    storage.audio.add
+]
+```
 
 ## pre_auth
 
-Automatically get an ```access_token``` when before you make a request
+Automatically get an ```access_token``` before you make your first request.
 
 ## audio_id
 
 You can construct a ```Simple::Emotion``` object with an ```audio_id```, set it later, or pass it as an arg to a method. 
-In all cases, the ```audio_id``` ends up as an attribute:
+In all cases, ```audio_id``` ends up as an attribute within ```Simple::Emotion```:
 
 ```perl
 my $e = Simple::Emotion->new(
