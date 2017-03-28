@@ -104,6 +104,18 @@ has content         => ( is => 'rw', clearer => 1 );
 has callback_url    => ( is => 'rw' );
 has callback_secret => ( is => 'rw' );
 
+has tags => (
+    is      => 'rw',
+    clearer => 1,
+    trigger => sub {
+        my ($self, $tags) = @_;
+        my $params = decode_json($self->params);
+
+        $params->{tags} = $tags;
+        $self->params($params);
+    }
+);
+
 sub _build_base       { return URI->new(BASE_URL) }
 sub _build_user_agent { return Furl->new }
 
@@ -271,6 +283,7 @@ sub _clean_up {
     $self->clear_no_params;
     $self->clear_no_auth;
     $self->clear_content;
+    $self->clear_tags;
 }
 
 1;

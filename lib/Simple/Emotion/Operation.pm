@@ -9,7 +9,7 @@ use Simple::Emotion::Constants;
 
 use constant _ROUTE => '/operations/v0';
 
-our @OPERATION_METHODS = qw(get_operation);
+our @OPERATION_METHODS = qw(get_operation list_operations remove_operation);
 
 around @OPERATION_METHODS => sub {
     my ($orig, $self, $params) = @_;

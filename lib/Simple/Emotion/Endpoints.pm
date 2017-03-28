@@ -7,6 +7,7 @@ use Moo::Role;
 with 'Simple::Emotion::Storage::Audio',
      'Simple::Emotion::Storage::Folder',
      'Simple::Emotion::Storage::Analysis',
+     'Simple::Emotion::Speech',
      'Simple::Emotion::Operation';
 
 use Simple::Emotion::Constants;
