@@ -12,7 +12,7 @@ use Simple::Emotion;
 my $e = Simple::Emotion->new(
     client_id     => $CLIENT_ID,
     client_secret => $CLIENT_SECRET,
-    scope         => 'transcribe',
+    scope         => 'transcription',
     pre_auth      => 1
 );
 
@@ -21,11 +21,18 @@ my $id   = $resp->id;
 
 $e->audio_id($id);
 
-my $audio = $e->get_audio;
+# Transcribe an audio recording
+$e->transcribe;
 
-# -- OR --
+# Or detect emotions:
+$e->detect;
 
-my $audio = $e->get_audio({ audio_id => $id });
+# Retrieve after analysis is finished:
+$e->analysis_id($e->id);
+
+$e->get_analysis;
+
+my $analysis = $e->content;
 ```
 
 Without pre-authorization:
@@ -37,8 +44,7 @@ Without pre-authorization:
     scope         => 'transcribe',
 );
 
-$e->authorize;
-    
+$e->authorize;    
 ```
 
 You can also set your ```client_id``` and ```client_secret``` in your ```$ENV``` as:
@@ -78,7 +84,7 @@ Your ```client_secret```
 The scope of your workflow, as provided by the API specs. You can also use some handy aliases for common workflows:
 
 ```perl
-transcribe => [qw(
+transcription => [qw(
     storage.audio.uploadFromUrl
     operations.get
     speech.transcribe
@@ -100,7 +106,7 @@ In all cases, ```audio_id``` ends up as an attribute within ```Simple::Emotion``
 my $e = Simple::Emotion->new(
     client_id      => $CLIENT_ID,
     client_secrent => $CLIENT_SECRET,
-    scope          => 'transcribe',
+    scope          => 'transcription',
     pre_auth       => 1,
     audio_id       => 12345678
 );
