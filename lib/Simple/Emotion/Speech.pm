@@ -1,6 +1,6 @@
 ## Author: Connor Yates
 ## vim: ts=8:sw=4:expandtab:shiftround
-## Abstract: Role for analysis storage
+## Abstract: Role for analysis storage endpoints
 
 package Simple::Emotion::Speech;
 use Moo::Role;

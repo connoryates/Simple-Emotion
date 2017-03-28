@@ -1,12 +1,13 @@
 ## Author: Connor Yates
 ## vim: ts=8:sw=4:expandtab:shiftround
-## Abstract: Methods for audio storage
+## Abstract: Role containing common endpoints
 
-package Simple::Emotion::Storage;
+package Simple::Emotion::Endpoints;
 use Moo::Role;
 with 'Simple::Emotion::Storage::Audio',
      'Simple::Emotion::Storage::Folder',
-     'Simple::Emotion::Storage::Analysis';
+     'Simple::Emotion::Storage::Analysis',
+     'Simple::Emotion::Operation';
 
 use Simple::Emotion::Constants;
 

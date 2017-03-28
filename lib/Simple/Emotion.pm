@@ -5,9 +5,7 @@
 package Simple::Emotion;
 use Moo;
 with 'Simple::Emotion::OAuth',
-     'Simple::Emotion::Storage',
-     'Simple::Emotion::Speech',
-     'Simple::Emotion::Operation';
+     'Simple::Emotion::Endpoints';
 
 use 5.008_005;
 our $VERSION = '0.01';
@@ -53,11 +51,12 @@ has scope => (
 );
 
 # API Specific parameters
-has org_id    => ( is => 'rw' );
-has user_id   => ( is => 'rw' );
-has audio_id  => ( is => 'rw' );
-has folder_id => ( is => 'rw' );
-has no_params => ( is => 'rw', clearer => 1 );
+has org_id       => ( is => 'rw' );
+has user_id      => ( is => 'rw' );
+has audio_id     => ( is => 'rw' );
+has folder_id    => ( is => 'rw' );
+has no_params    => ( is => 'rw', clearer => 1 );
+has operation_id => ( is => 'rw' );
 
 # HTTP request details
 has route        => ( is => 'rw', clearer => 1, default => sub { '/' } );
