@@ -70,13 +70,13 @@ has params  => (
     clearer => 1,
 );
 
+# DEPRECATED
 has query_params => (
     is  => 'rw',
     isa => sub {
         carp "Request params must be a HASH or string"
           if ref $_[0] and ref $_[0] ne 'HASH';
     },
-    # TODO: remove this
     default => sub { my $self = shift; $self->audio_id || $self->org_id || $self->user_id || '/' },
     coerce  => sub { return ref $_[0] ? join '/', values %{ $_[0] } : $_[0] },
 );
@@ -132,12 +132,8 @@ sub _build_http_request {
 sub _build_uri {
     my $self = shift;
 
-    my $uri  = URI->new($self->scheme . $self->base);
-    my $path = $self->_replace_splat($self->request_path);
-
-    $self->no_params ?
-      $uri->path($path) :
-      $uri->path($path . $self->query_params);
+    my $uri = URI->new($self->scheme . $self->base);
+    $uri->path($self->request_path . $self->query_params);
 
     return $uri;
 }
@@ -169,8 +165,8 @@ sub make_request {
 
     my $content;
     try {
-        use Data::Dumper;
-        print Dumper $self->http_request;
+        # use Data::Dumper;
+        # print Dumper $self->http_request;
         my $resp = $self->request($self->http_request);
 
         die $resp->content unless $resp->is_success;
@@ -194,6 +190,40 @@ sub id {
       or cluck "No _id returned from last request to " . $self->url;
 
     return $id || VOID;
+}
+
+sub audio_to_text {
+    my ($self, $audio_id) = @_;
+
+    $self->list_analysis({
+        analysis  => {
+            audio => {
+                _id => $audio_id,
+            }
+        }
+    });
+
+    return $self->_extract_audio_text;
+}
+
+sub _extract_audio_text {
+    my $self = shift;
+
+    my $content  = $self->content or carp "Cannot get audio text - no content returned";
+    my $analyses = $content->{analyses};
+
+    carp "Missing analyses" unless $analyses;
+
+    my @words = ();
+    foreach my $analysis (@$analyses) {
+        my $data = $analysis->{data};
+
+        foreach my $t (@{ $data->{turns} }) {
+            push @words, map { $_->{word} } @{ $t->{words} };
+        }
+    }
+
+    return join ' ', @words;
 }
 
 sub _create_request {

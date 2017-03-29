@@ -26,6 +26,7 @@ print Dumper $emotion->list_operations({
             }
         ],
 #        type => 'transload-audio',
+#        tags => ['transcribe_callback_test'],
     },
 });
 
