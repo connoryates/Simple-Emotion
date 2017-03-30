@@ -323,7 +323,7 @@ __END__
 
 =head1 NAME
 
-Simple::Emotion - Detect emotions from audio recordings
+Simple::Emotion - Transcribe and detect emotions from audio recordings.
 
 =head1 SYNOPSIS
 
@@ -362,7 +362,9 @@ Simple::Emotion - Detect emotions from audio recordings
             basename => 'voicemail_1.mp3',
         },
         destination => {
-            folder => _id => $folder_id,
+            folder => {
+                _id => $folder_id,
+            }
         },
     });
 

@@ -4,60 +4,91 @@ Simple::Emotion - Client for api.simpleemotion.com.
 
 # SYNOPSIS
 
-With pre-authorization:
+    use Simple::Emotion;
 
-```perl
-use Simple::Emotion;
+    my $emotion = Simple::Emotion->new(
+        client_id     => $CLIENT_ID,
+        client_secret => $CLIENT_SECRET,
+    );
 
-my $e = Simple::Emotion->new(
-    client_id     => $CLIENT_ID,
-    client_secret => $CLIENT_SECRET,
-    scope         => 'transcription',
-    pre_auth      => 1
-);
+    $emotion->authorize;
+    $emotion->scope('storage');
 
-my $resp = $e->upload_from_url('http://url-with-audio-file');
-my $id   = $resp->id;
+    $emotion->add_folder({
+        folder => {
+            basename => 'my_voicemail_folder',
+        },
+        destination => {
+            folder  => {
+                owner => {
+                    _id  => $OWNER_ID,
+                    type => 'user',
+                },
+            },
+            service => 'voicemail_transcription',
+            name => 'voicemail',
+        },
+    });
 
-$e->audio_id($id);
+    # Retains the last ID returned
+    my $folder_id = $emotion->id;
 
-# Transcribe an audio recording
-$e->transcribe;
+    # Create an audio folder to hold your recording
+    $emotion->add_audio({
+        folder => {
+            basename => 'voicemail_1.mp3',
+        },
+        destination => {
+            folder  => {
+                _id => $folder_id,
+            }
+        },
+    });
 
-# Or detect emotions:
-$e->detect;
+    my $audio_id = $emotion->id;
 
-# Retrieve after analysis is finished:
-$e->analysis_id($e->id);
+    # Upload your recording directly from its url
+    $emotion->upload_from_url({
+        audio => {
+            _id => $audio_id,
+        },
+        url => 'https://your-download-link',
+        operation => {
+            tags  => [qw(voicemail_transcription)],
+            callbacks => {
+                completed  => {
+                    url    => 'https://your-apps-webhook',
+                    secret => 'SUPER DUPER',
+                },
+            },
+        },
+    });
 
-$e->get_analysis;
+    # Wait for webhook...
+    my $params = @_;
 
-my $analysis = $e->content;
-```
+    my $op = $emotion->get_operation({
+        operation => {
+            _id => $params->{operation}->{_id},
+        },
+    });
 
-Without pre-authorization:
+    $emotion->transcribe({
+        audio => {
+            _id => $op->{audio}->{_id},
+        },
+    });
 
-```perl
- my $e = Simple::Emotion->new(
-    client_id     => $CLIENT_ID,
-    client_secret => $CLIENT_SECRET,
-    scope         => 'transcribe',
-);
+    # Wait for webhook...
+    my $transcription = $emotion->audio_to_text($audio_id);
 
-$e->authorize;    
-```
+    # Get full analysis read out:
+    my $analyses = $emotion->list_analysis({
+        audio => {
+            _id => $audio_id,
+        },
+    });
 
-You can also set your ```client_id``` and ```client_secret``` in your ```$ENV``` as:
-
-```SIMPLE_EMOTION_CLIENT_ID```
-
-and
-
-```SIMPLE_EMOTION_CLIENT_SECRET```
-
-or, if you already have an access token, you can set:
-
-```SIMPLE_EMOTION_ACCESS_TOKEN```
 
 # DESCRIPTION
 
