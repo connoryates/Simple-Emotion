@@ -12,7 +12,7 @@ Simple::Emotion - Client for api.simpleemotion.com.
     );
 
     $emotion->authorize;
-    $emotion->scope('storage');
+    $emotion->scope('transcription');
 
     $emotion->add_folder({
         folder => {
