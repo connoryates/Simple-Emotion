@@ -6,6 +6,10 @@ use lib 'lib';
 use Data::Dumper;
 use Simple::Emotion;
 
+my $id = $ARGV[0];
+
+die "Missing ID" unless $id;
+
 my $emotion = Simple::Emotion->new(
     scope    => 'transcription',
     pre_auth => 1,
@@ -13,7 +17,7 @@ my $emotion = Simple::Emotion->new(
 
 my $op = $emotion->get_operation({
     operation => {
-        _id => '58daac8ad307531fa9eea754'
+        _id => $id
     }
 });
 

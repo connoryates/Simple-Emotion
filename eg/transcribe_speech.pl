@@ -5,6 +5,7 @@ use warnings;
 use lib 'lib';
 use Data::Dumper;
 use Simple::Emotion;
+use Simple::Emotion::Constants;
 
 my $id = $ARGV[0];
 
@@ -15,7 +16,20 @@ my $emotion = Simple::Emotion->new(
     pre_auth => 1,
 );
 
-my $trans = $emotion->transcribe({ audio => { _id => $id } });
+my $trans = $emotion->transcribe({
+    audio => {
+        _id => $id
+    },
+    diarized  => true,
+    operation => {
+        callbacks => {
+            completed  => {
+                url    => 'http://dyl1-cy.getdyl.com/api/simple_emotion',
+                secret => 'SUPER SECRET',
+            },
+        }
+    },
+});
 
 print Dumper $trans;
 

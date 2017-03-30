@@ -17,27 +17,6 @@ my $emotion = Simple::Emotion->new(
 
 print Dumper $emotion->audio_to_text($id);
 
-#my $resp = $emotion->list_analysis({
-#    analysis  => {
-#        audio => {
-#            _id => $id,
-#        }
-#    },
-#});
-
-#my $analyses = $resp->{analyses};
-
-#my @words = ();
-#foreach my $analysis (@$analyses) {
-#    my $data = $analysis->{data};
-#    foreach my $t (@{ $data->{turns} }) {
-#        push @words, map { $_->{word} } @{ $t->{words} };
-#    }
-#}
-
-#print join " ", @words;
-#print "\n";
-
 exit(0);
 
 # 58dc1eec81ab1a31e57ac860

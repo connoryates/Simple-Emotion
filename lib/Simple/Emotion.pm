@@ -51,11 +51,9 @@ has scope => (
 );
 
 # API Specific parameters
-has org_id       => ( is => 'rw' );
-has user_id      => ( is => 'rw' );
 has audio_id     => ( is => 'rw' );
 has folder_id    => ( is => 'rw' );
-has no_params    => ( is => 'rw', clearer => 1 );
+# has no_params    => ( is => 'rw', clearer => 1 );
 has operation_id => ( is => 'rw' );
 
 # HTTP request details
@@ -68,17 +66,6 @@ has params  => (
     coerce  => sub { encode_json(shift) },
     default => sub { +{ scope => shift->scope } },
     clearer => 1,
-);
-
-# DEPRECATED
-has query_params => (
-    is  => 'rw',
-    isa => sub {
-        carp "Request params must be a HASH or string"
-          if ref $_[0] and ref $_[0] ne 'HASH';
-    },
-    default => sub { my $self = shift; $self->audio_id || $self->org_id || $self->user_id || '/' },
-    coerce  => sub { return ref $_[0] ? join '/', values %{ $_[0] } : $_[0] },
 );
 
 has request_type => (
@@ -94,15 +81,49 @@ has request_type => (
 # Request and URI details
 has uri          => ( is => 'lazy', clearer => 1 );
 has base         => ( is => 'lazy' );
-has splat        => ( is => 'rw', default => 0, predicate => 1 );
 has user_agent   => ( is => 'lazy', handles => [qw/request/] );
 has http_request => ( is => 'lazy', clearer => 1 );
 
 has url => ( is => 'ro', lazy => 1, default => sub { shift->uri->as_string } );
 
-has content         => ( is => 'rw', clearer => 1 );
-has callback_url    => ( is => 'rw' );
-has callback_secret => ( is => 'rw' );
+has content      => ( is => 'rw', clearer => 1 );
+has callback_url => (
+    is      => 'rw',
+    trigger => sub {
+        my ($self, $url) = @_;
+        my $params = decode_json($self->params);
+
+        my $data = {
+            callbacks => {
+                completed => {
+                    url   => $url,
+                },
+            },
+        };
+
+        $params->{operation} = $data;
+        $self->params($params);
+    }
+
+);
+has callback_secret => (
+    is      => 'rw',
+    trigger => sub {
+        my ($self, $secret) = @_;
+        my $params = decode_json($self->params);
+
+        my $data = {
+            callbacks => {
+                completed  => {
+                    secret => $secret,
+                },
+            },
+        };
+
+        $params->{operation} = $data;
+        $self->params($params);
+    }
+);
 
 has tags => (
     is      => 'rw',
@@ -133,13 +154,15 @@ sub _build_uri {
     my $self = shift;
 
     my $uri = URI->new($self->scheme . $self->base);
-    $uri->path($self->request_path . $self->query_params);
+    $uri->path($self->request_path);
 
     return $uri;
 }
 
 sub _set_scope { push @{ shift->scope }, shift }
 sub _get_scope { return join ' ', shift->scope }
+
+sub last_response { shift->content }
 
 sub BUILD {
     my $self = shift;
@@ -165,8 +188,8 @@ sub make_request {
 
     my $content;
     try {
-        # use Data::Dumper;
-        # print Dumper $self->http_request;
+        use Data::Dumper;
+        print Dumper $self->http_request;
         my $resp = $self->request($self->http_request);
 
         die $resp->content unless $resp->is_success;
@@ -195,6 +218,8 @@ sub id {
 sub audio_to_text {
     my ($self, $audio_id) = @_;
 
+    $audio_id ||= $self->audio_id;
+
     $self->list_analysis({
         analysis  => {
             audio => {
@@ -211,6 +236,9 @@ sub _extract_audio_text {
 
     my $content  = $self->content or carp "Cannot get audio text - no content returned";
     my $analyses = $content->{analyses};
+
+    use Data::Dumper;
+    print Dumper $content;
 
     carp "Missing analyses" unless $analyses;
 
@@ -274,34 +302,6 @@ sub _error {
     return;
 }
 
-sub _valid_splat {
-    my ($self, $splat) = @_;
-
-    return 1 if first { $splat eq $_ } 
-      grep { /_id$/ } $self->meta->get_attribute_list;
-
-    return;
-}
-
-sub _replace_splat {
-    my ($self, $path) = @_;
-
-    return unless $path;
-
-    if (my @splat = ($path =~ m!/\#\{([a-z_]+)\}/!g)) {
-        for my $splat (@splat) {
-            if ($self->_valid_splat($splat)) {
-                # Per API docs: "Use - if not known."
-                my $param = $self->$splat || '-';
-
-                $path =~ s!#\{$splat\}!$param!g;
-            }
-        }
-    }
-
-    return $path;
-}
-
 sub _clean_up {
     my $self = shift;
 
@@ -310,7 +310,6 @@ sub _clean_up {
     $self->clear_uri;
     $self->clear_route;
     $self->clear_request_path;
-    $self->clear_no_params;
     $self->clear_no_auth;
     $self->clear_content;
     $self->clear_tags;
@@ -328,11 +327,130 @@ Simple::Emotion - Detect emotions from audio recordings
 
 =head1 SYNOPSIS
 
-  use Simple::Emotion;
+    use Simple::Emotion;
+
+    my $emotion = Simple::Emotion->new(
+        client_id     => $CLIENT_ID,
+        client_secret => $CLIENT_SECRET,
+    );
+
+    $emotion->authorize;
+    $emotion->scope('storage');
+
+    $emotion->add_folder({
+        folder => {
+            basename => 'my_voicemail_folder',
+        },
+        destination => {
+            folder => {
+                owner => {
+                    _id => $OWNER_ID,
+                    type => 'user',
+                },
+            },
+            service => 'voicemail_transcription',
+            name => 'voicemail',
+        },
+    });
+
+    # Retains the last ID returned
+    my $folder_id = $emotion->id;
+
+    # Create an audio folder to hold your recording
+    $emotion->add_audio({
+        folder => {
+            basename => 'voicemail_1.mp3',
+        },
+        destination => {
+            folder => _id => $folder_id,
+        },
+    });
+
+    my $audio_id = $emotion->id;
+
+    # Upload your recording directly from its url
+    $emotion->upload_from_url({
+        audio => {
+            _id => $audio_id,
+        },
+        url => 'https://your-download-link',
+        operation => {
+            tags  => [qw(voicemail_transcription)],
+            callbacks => {
+                completed  => {
+                    url    => 'https://your-apps-webhook',
+                    secret => 'SUPER DUPER',
+                },
+            },
+        },
+    });
+
+    # Wait for webhook...
+    my $params = @_;
+
+    my $op = $emotion->get_operation({
+        operation => {
+            _id => $params->{operation}->{_id},
+        },
+    });
+
+    $emotion->transcribe({
+        audio => {
+            _id => $op->{audio}->{_id},
+        },
+    });
+
+    # Wait for webhook...
+
+    my $transcription = $emotion->audio_to_text($audio_id);
+
+    # Get full analysis read out:
+
+    my $analyses = $emotion->list_analysis({
+        audio => {
+            _id => $audio_id,
+        },
+    });
 
 =head1 DESCRIPTION
 
-Simple::Emotion is
+Simple::Emotion is a wrapper around api.simpleemotion.com - a beta API capable of audio transcription and emotion detection.
+
+[Official API documentation here.](https://api.simpleemotion.com/docs/storage/v0.html)
+
+### Note:
+
+This API is in v0, so breaking changes will occur
+
+=head1 Constructor
+
+    ## client_id
+
+        Your ```client_id```
+
+    ## client_secret
+
+        Your ```client_secret```
+
+    ## scope
+
+        The scope of your workflow, as provided by the API specs. You can also use some handy aliases for common workflows:
+
+            transcription => [qw(
+                storage.audio.uploadFromUrl
+                operations.get
+                speech.transcribe
+                storage.analysis.get
+                storage.audio.add
+            )];
+
+    ## pre_auth
+
+        Automatically get an ```access_token``` before you make your first request.
+
+=head1 Attributes
+
+=head1 Methods
 
 =head1 AUTHOR
 

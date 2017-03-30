@@ -5,9 +5,11 @@
 package Simple::Emotion::Constants;
 use Moo;
 
+use Types::Serialiser;
+
 extends 'Exporter';
 
-our @EXPORT = qw(POST GET PUT HEAD PATCH DELETE VOID BASE_URL REST_HTTP SPLAT_REGEXP SPLAT_CAPTURE);
+our @EXPORT = qw(POST GET PUT HEAD PATCH DELETE VOID BASE_URL REST_HTTP SPLAT_REGEXP SPLAT_CAPTURE true false);
 
 use constant POST   => 'POST';
 use constant GET    => 'GET';
@@ -25,6 +27,9 @@ use constant REST_HTTP => qw(GET POST PATCH PUT HEAD);
 
 our $TRANSCRIPTION_FLOW        = 'storage.audio.uploadFromUrl operations.get speech.transcribe storage.analysis.get storage.audio.add';
 our $TRANSCRIPTION_FLOW_SIMPLE = 'storage operations speech';
+
+use constant true  => $Types::Serialiser::true;
+use constant false => $Types::Serialiser::false;
 
 1;
 
