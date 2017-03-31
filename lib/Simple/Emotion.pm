@@ -235,6 +235,9 @@ sub audio_to_text {
 sub transload_audio {
     my ($self, $url) = @_;
 
+    # TODO: handle HASH input with name and service input,
+    # use folder_id attribute as fall back
+
     carp "Missing url" unless $url;
     carp "Missing folder_id" unless $self->folder_id;
 
