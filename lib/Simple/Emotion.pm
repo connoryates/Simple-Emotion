@@ -106,11 +106,13 @@ has callback_url => (
     }
 
 );
+
 has callback_secret => (
     is      => 'rw',
     trigger => sub {
         my ($self, $secret) = @_;
-        my $params = decode_json($self->params);
+
+        carp "Attribute callback_secret must be a string" if ref $secret;
 
         my $data = {
             callbacks => {
@@ -120,8 +122,7 @@ has callback_secret => (
             },
         };
 
-        $params->{operation} = $data;
-        $self->params($params);
+        $self->_set_param(['operation', $data]);
     }
 );
 
@@ -130,11 +131,34 @@ has tags => (
     clearer => 1,
     trigger => sub {
         my ($self, $tags) = @_;
-        my $params = decode_json($self->params);
 
-        $params->{tags} = $tags;
-        $self->params($params);
+        $tag = ref $tags ? $tags : [ $tags ];
+
+        $self->_set_param(['tags', $tags']);
     }
+);
+
+has service => (
+    is      => 'rw',
+    clearer => 1,
+    trigger => sub {
+        my ($self, $service) = @_;
+
+        carp "Attribute service must be a Str" if ref $service;
+
+        $self->_set_param(['service', $service]);
+    },
+);
+has basename => (
+    is => 'rw',
+    clearer => 1,
+    trigger => sub {
+        my ($self, $basename) = @_;
+
+        carp "Attribute basename must be a Str" if ref $basename;
+
+        $self->_set_param(['basename', $basename]);
+    },
 );
 
 sub _build_base       { return URI->new(BASE_URL) }
@@ -161,6 +185,17 @@ sub _build_uri {
 
 sub _set_scope { push @{ shift->scope }, shift }
 sub _get_scope { return join ' ', shift->scope }
+
+sub _set_param {
+    my ($self, $param) = @_;
+
+    my $params = decode_json($self->params);
+
+    my ($key, $val) = $param->[0], $param->[1];
+    $params->{$key} = $val;
+
+    $self->params($params);
+}
 
 sub last_response { shift->content }
 
@@ -202,7 +237,9 @@ sub make_request {
     };
 
     $self->content($content);
-    $self->_set_id;
+
+    # No ID returned from OAuth request
+    $self->_set_id unless caller[0] =~ /OAuth$/;
 
     return $content;
 }
@@ -255,7 +292,7 @@ sub transload_audio {
         audio => {
             _id => $self->audio_id,
         },
-        url => $input->{url},
+        url => $url,
         operation => {
             tags  => $self->tags,
             callbacks => {
@@ -268,6 +305,23 @@ sub transload_audio {
     });
 
     return $self->operation_id;
+}
+
+sub operation_to_text {
+    my ($self, $op_id) = @_;
+
+    carp "Missing operation_id" unless $op_id;
+
+    $self->get_operation({
+        operation => {
+            _id => $op_id,
+        },
+    });
+
+    my $content = $self->content;
+    my $params  = $content->{operation}->{parameters};
+
+    return $self->audio_to_text($params->{audio_id});
 }
 
 sub _set_id {
