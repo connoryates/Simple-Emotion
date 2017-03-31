@@ -355,6 +355,7 @@ Add an audio file and upload a recording url in one method:
         client_id       => $CLIENT_ID,
         client_secret   => $CLIENT_SECRET,
         pre_auth        => 1,
+        # Or set later or not at all
         callback_url    => 'https://your-apps-webhook',
         callback_secret => $CALLBACK_SECRET,
     );
