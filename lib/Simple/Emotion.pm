@@ -92,17 +92,11 @@ has callback_url => (
     is      => 'rw',
     trigger => sub {
         my ($self, $url) = @_;
-        my $params = decode_json($self->params);
 
-        my $data = {
-            callbacks => {
-                completed => {
-                    url   => $url,
-                },
-            },
-        };
+        carp "Attribute callback_url must be a string"
+          if ref $url;
 
-        $params->{operation} = $data;
+        $params->{operation}->{callbacks}->{completed}->{url} = $url;
         $self->params($params);
     }
 );
@@ -112,16 +106,10 @@ has callback_secret => (
     trigger => sub {
         my ($self, $secret) = @_;
 
-        carp "Attribute callback_secret must be a string" if ref $secret;
+        carp "Attribute callback_secret must be a string"
+          if ref $secret;
 
-        my $data = {
-            callbacks => {
-                completed  => {
-                    secret => $secret,
-                },
-            },
-        };
-
+        $params->{operation}->{callbacks}->{completed}->{url} = $secret;
         $self->_set_param(['operation', $data]);
     }
 );
