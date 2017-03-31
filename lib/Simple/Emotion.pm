@@ -202,6 +202,7 @@ sub make_request {
     };
 
     $self->content($content);
+    $self->_set_id;
 
     return $content;
 }
@@ -229,6 +230,63 @@ sub audio_to_text {
     });
 
     return $self->_extract_audio_text;
+}
+
+sub transload_audio {
+    my ($self, $url) = @_;
+
+    carp "Missing url" unless $url;
+    carp "Missing folder_id" unless $self->folder_id;
+
+    $self->add_audio({
+        folder => {
+            basename => $self->basename,
+        }, 
+        destination => {
+            folder  => {
+                _id => $self->folder_id,
+            },
+        },
+    });
+
+    carp "Missing audio_id" unless $self->audio_id;
+
+    $self->upload_from_url({
+        audio => {
+            _id => $self->audio_id,
+        },
+        url => $input->{url},
+        operation => {
+            tags  => $self->tags,
+            callbacks => {
+                completed  => {
+                    url    => $self->callback_url,
+                    secret => $self->callback_secret,
+                },
+            },
+        },
+    });
+
+    return $self->operation_id;
+}
+
+sub _set_id {
+    my $self = shift;
+
+    my $id      = $self->id;
+    my $content = $self->content;
+
+    while (my ($k, $v) = each %$content) {
+        my $type_id = $k . '_id';
+
+        if ($self->can($type_id)) {
+            # Set each ID type after response
+            $self->$type_id($id);
+            last;
+        }
+    }
+
+    return;
 }
 
 sub _extract_audio_text {

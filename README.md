@@ -31,9 +31,6 @@ Simple::Emotion - Client for api.simpleemotion.com.
         },
     });
 
-    # Retains the last ID returned
-    my $folder_id = $emotion->id;
-
     # Create an audio folder to hold your recording
     $emotion->add_audio({
         folder => {
@@ -41,17 +38,15 @@ Simple::Emotion - Client for api.simpleemotion.com.
         },
         destination => {
             folder  => {
-                _id => $folder_id,
+                _id => $emotion->folder_id,
             }
         },
     });
 
-    my $audio_id = $emotion->id;
-
     # Upload your recording directly from its url
     $emotion->upload_from_url({
         audio => {
-            _id => $audio_id,
+            _id => $emotion->audio_id,
         },
         url => 'https://your-download-link',
         operation => {
@@ -65,8 +60,8 @@ Simple::Emotion - Client for api.simpleemotion.com.
         },
     });
 
-    # Wait for webhook...
-    my $params = @_;
+    # Wait for webhook in your API...
+    my $params = params;
 
     my $secret = $params->{headers}->{'X-SE-Signature'};
 
@@ -91,8 +86,8 @@ Simple::Emotion - Client for api.simpleemotion.com.
         },
     });
 
-    # Wait for webhook...
-    my $params = @_;
+    # Wait for webhook in your API...
+    my $params = params;
 
     my $secret = $params->{headers}->{'X-SE-Signature'};
 
