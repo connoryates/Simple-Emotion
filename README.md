@@ -153,6 +153,22 @@ transcription => [qw(
 
 Automatically get an ```access_token``` before you make your first request.
 
+If you set:
+
+```perl
+my $emotion = Simple::Emotion->new(
+    client_id     => $CLIENT_ID,
+    client_secret => $CLIENT_SECRET,
+    pre_auth      => 1,
+);
+```
+
+There is no need to call:
+
+```perl
+$emotion->authorize;
+```
+
 ## audio_id
 
 You can construct a ```Simple::Emotion``` object with an ```audio_id```, set it later, or pass it as an arg to a method. 
