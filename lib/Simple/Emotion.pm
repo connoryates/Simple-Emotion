@@ -17,6 +17,7 @@ use HTTP::Request;
 use Carp qw(carp cluck);
 use List::Util qw(first);
 use Simple::Emotion::Constants;
+use Scalar::Util qw(looks_like_number);
 use JSON::XS qw(encode_json decode_json);
 
 has scheme => ( is => 'ro', default => sub { 'https://' } );
@@ -91,37 +92,25 @@ has callback_url => (
     is      => 'rw',
     trigger => sub {
         my ($self, $url) = @_;
-        my $params = decode_json($self->params);
 
-        my $data = {
-            callbacks => {
-                completed => {
-                    url   => $url,
-                },
-            },
-        };
+        carp "Attribute callback_url must be a string"
+          if ref $url;
 
-        $params->{operation} = $data;
+        $params->{operation}->{callbacks}->{completed}->{url} = $url;
         $self->params($params);
     }
-
 );
+
 has callback_secret => (
     is      => 'rw',
     trigger => sub {
         my ($self, $secret) = @_;
-        my $params = decode_json($self->params);
 
-        my $data = {
-            callbacks => {
-                completed  => {
-                    secret => $secret,
-                },
-            },
-        };
+        carp "Attribute callback_secret must be a string"
+          if ref $secret;
 
-        $params->{operation} = $data;
-        $self->params($params);
+        $params->{operation}->{callbacks}->{completed}->{url} = $secret;
+        $self->_set_param(['operation', $data]);
     }
 );
 
@@ -130,11 +119,58 @@ has tags => (
     clearer => 1,
     trigger => sub {
         my ($self, $tags) = @_;
-        my $params = decode_json($self->params);
 
-        $params->{tags} = $tags;
-        $self->params($params);
-    }
+        $tags = ref $tags ? $tags : [ $tags ];
+
+        $self->_set_param(['tags', $tags]);
+    },
+);
+
+has service => (
+    is      => 'rw',
+    clearer => 1,
+    trigger => sub {
+        my ($self, $service) = @_;
+
+        carp "Attribute service must be a Str"
+          if ref $service;
+
+        $self->_set_param(['service', $service]);
+    },
+);
+
+has basename => (
+    is       => 'rw',
+    clearer  => 1,
+    trigger  => sub {
+        my ($self, $basename) = @_;
+
+        carp "Attribute basename must be a Str"
+          if ref $basename;
+
+        $self->_set_param(['basename', $basename]);
+    },
+);
+
+# trigger these as well? Gut says no
+has analysis_version => (
+    is      => 'rw',
+    clearer => 1,
+    default => sub {
+        return {
+            latest   => true,
+            # major    => ANALYSIS_MAJOR,
+            # minor    => ANALYSIS_MINOR,
+            # patch    => ANALYSIS_PATCH,
+            # revision => ANALYSIS_REVISION,
+        }
+    }, 
+);
+
+has analysis_type => (
+    is      => 'rw',
+    clearer => 1,
+    default => sub { 'transcribe-raw-speech' },
 );
 
 sub _build_base       { return URI->new(BASE_URL) }
@@ -161,6 +197,20 @@ sub _build_uri {
 
 sub _set_scope { push @{ shift->scope }, shift }
 sub _get_scope { return join ' ', shift->scope }
+
+sub _set_param {
+    my ($self, $param) = @_;
+
+    my $params = decode_json($self->params)
+      if $self->params and !ref $self->params;
+
+    $params ||= +{};
+
+    my ($key, $val) = ($param->[0], $param->[1]);
+    $params->{$key} = $val;
+
+    $self->params($params);
+}
 
 sub last_response { shift->content }
 
@@ -202,7 +252,9 @@ sub make_request {
     };
 
     $self->content($content);
-    $self->_set_id;
+
+    # No ID returned from OAuth request
+    $self->_set_id unless caller[0] =~ /OAuth$/;
 
     return $content;
 }
@@ -221,12 +273,14 @@ sub audio_to_text {
 
     $audio_id ||= $self->audio_id;
 
-    $self->list_analysis({
+    $self->get_analysis({
         analysis  => {
             audio => {
                 _id => $audio_id,
-            }
-        }
+            },
+            type    => $self->analysis_type,
+            version => $self->analysis_version,
+        },
     });
 
     return $self->_extract_audio_text;
@@ -258,7 +312,7 @@ sub transload_audio {
         audio => {
             _id => $self->audio_id,
         },
-        url => $input->{url},
+        url => $url,
         operation => {
             tags  => $self->tags,
             callbacks => {
@@ -271,6 +325,26 @@ sub transload_audio {
     });
 
     return $self->operation_id;
+}
+
+sub operation_to_text {
+    my ($self, $op_id) = @_;
+
+    carp "Missing operation_id" unless $op_id;
+
+    my $c = $self->get_operation({
+        operation => {
+            _id => $op_id,
+        },
+    });
+
+    my $content = $self->content;
+    my $params  = $content->{operation}->{parameters};
+
+    carp "Missing audio_id, cannot convert operation to text"
+      unless defined $params->{audio_id};
+
+    return $self->audio_to_text($params->{audio_id});
 }
 
 sub _set_id {

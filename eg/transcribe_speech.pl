@@ -20,7 +20,7 @@ my $trans = $emotion->transcribe({
     audio => {
         _id => $id
     },
-    diarized  => true,
+    # diarized  => true,
     operation => {
         callbacks => {
             completed  => {

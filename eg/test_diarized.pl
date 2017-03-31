@@ -17,15 +17,15 @@ my $emotion = Simple::Emotion->new(
 
 $emotion->add_audio({
     audio => {
-        basename => 'test_diarized_metadata_8.wav',
+        basename => 'test_diarized_metadata_14.wav',
         metadata => {
             speakers => [
                 {
-                    _id  => "5",
+                    _id  => "14",
                     role => 'agent',
                 },
                 {
-                    _id  => "6",
+                    _id  => "15",
                     role => 'customer',
                 },
             ],
@@ -37,6 +37,8 @@ $emotion->add_audio({
         }
     }
 });
+
+print "AUDIO_ID => " . $emotion->audio_id . "\n";
 
 my $id = $emotion->id;
 

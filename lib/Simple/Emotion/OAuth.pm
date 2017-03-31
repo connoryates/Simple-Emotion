@@ -12,8 +12,6 @@ use constant _ROUTE => '/oauth2/v0/';
 
 has auth_endpoint => ( is => 'rw', default => sub { 'token' } );
 
-our @OAUTH_METHODS = qw(token);
-
 sub _auth_params {
     my $self = shift;
 
@@ -25,7 +23,7 @@ sub _auth_params {
     }
 }
 
-around @OAUTH_METHODS => sub {
+around token => sub {
     my ($orig, $self) = @_;
 
     $self->route(_ROUTE);
