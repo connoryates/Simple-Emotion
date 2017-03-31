@@ -4,6 +4,7 @@ Simple::Emotion - Client for api.simpleemotion.com.
 
 # SYNOPSIS
 
+```perl
     use Simple::Emotion;
 
     my $emotion = Simple::Emotion->new(
@@ -54,6 +55,32 @@ Simple::Emotion - Client for api.simpleemotion.com.
         },
         url => 'https://your-download-link',
         operation => {
+            tags  => [qw(voicemail_upload)],
+            callbacks => {
+                completed  => {
+                    url    => 'https://your-apps-webhook',
+                    secret => 'SUPER DUPER',
+                },
+            },
+        },
+    });
+
+    # Wait for webhook...
+    my $params = @_;
+
+    my $secret = $params->{headers}->{'X-SE-Signature'};
+
+    my $op = $emotion->get_operation({
+        operation => {
+            _id => $params->{operation}->{_id},
+        },
+    });
+
+    $emotion->transcribe({
+        audio => {
+            _id => $op->{audio}->{_id},
+        },
+        operation => {
             tags  => [qw(voicemail_transcription)],
             callbacks => {
                 completed  => {
@@ -67,19 +94,17 @@ Simple::Emotion - Client for api.simpleemotion.com.
     # Wait for webhook...
     my $params = @_;
 
+    my $secret = $params->{headers}->{'X-SE-Signature'};
+
     my $op = $emotion->get_operation({
         operation => {
             _id => $params->{operation}->{_id},
         },
     });
-
-    $emotion->transcribe({
-        audio => {
-            _id => $op->{audio}->{_id},
-        },
-    });
-
-    # Wait for webhook...
+    
+    my $audio_id = $op->{audio}->{_id};
+    
+    # Convert analyses to text
     my $transcription = $emotion->audio_to_text($audio_id);
 
     # Get full analysis read out:
@@ -88,7 +113,7 @@ Simple::Emotion - Client for api.simpleemotion.com.
             _id => $audio_id,
         },
     });
-
+```
 
 # DESCRIPTION
 
