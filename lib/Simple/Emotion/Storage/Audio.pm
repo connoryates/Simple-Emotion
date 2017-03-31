@@ -13,7 +13,7 @@ has upload_url_endpoint  => ( is => 'rw', default => sub { '/uploadFromUrl'  } )
 has get_upload_endpoint  => ( is => 'rw', default => sub { '/getUploadUrl'   } );
 has get_download_enpoint => ( is => 'rw', default => sub { '/getDownloadUrl' } );
 
-our @AUDIO_STORAGE_METHODS = qw(
+my @methods = qw(
     upload_from_url add_audio
     list_audio      get_audio
     get_upload_url  audio_exists
@@ -21,7 +21,7 @@ our @AUDIO_STORAGE_METHODS = qw(
     get_upload_url  get_download_url
 );
 
-around @AUDIO_STORAGE_METHODS => sub {
+around @methods => sub {
     my ($orig, $self, $params) = @_;
 
     $self->route(_ROUTE);

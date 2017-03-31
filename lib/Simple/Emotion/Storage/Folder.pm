@@ -14,9 +14,9 @@ has list_folders_endpoint  => ( is => 'rw', default => sub { '/list'   } );
 has folder_exists_endpoint => ( is => 'rw', default => sub { '/exists' } );
 has get_folder_endpoint    => ( is => 'rw', default => sub { '/get'    } );
 
-our @STORAGE_FOLDER_METHODS = qw(add_folder list_folders folder_exists get_folder);
+my @methods = qw(add_folder list_folders folder_exists get_folder);
 
-around @STORAGE_FOLDER_METHODS => sub {
+around @methods => sub {
     my ($orig, $self, $params) = @_;
 
     $self->route(_ROUTE);

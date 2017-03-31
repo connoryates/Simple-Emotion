@@ -17,6 +17,7 @@ use HTTP::Request;
 use Carp qw(carp cluck);
 use List::Util qw(first);
 use Simple::Emotion::Constants;
+use Scalar::Util qw(looks_like_number);
 use JSON::XS qw(encode_json decode_json);
 
 has scheme => ( is => 'ro', default => sub { 'https://' } );
@@ -104,7 +105,6 @@ has callback_url => (
         $params->{operation} = $data;
         $self->params($params);
     }
-
 );
 
 has callback_secret => (
@@ -132,10 +132,10 @@ has tags => (
     trigger => sub {
         my ($self, $tags) = @_;
 
-        $tag = ref $tags ? $tags : [ $tags ];
+        $tags = ref $tags ? $tags : [ $tags ];
 
-        $self->_set_param(['tags', $tags']);
-    }
+        $self->_set_param(['tags', $tags]);
+    },
 );
 
 has service => (
@@ -144,21 +144,45 @@ has service => (
     trigger => sub {
         my ($self, $service) = @_;
 
-        carp "Attribute service must be a Str" if ref $service;
+        carp "Attribute service must be a Str"
+          if ref $service;
 
         $self->_set_param(['service', $service]);
     },
 );
+
 has basename => (
-    is => 'rw',
-    clearer => 1,
-    trigger => sub {
+    is       => 'rw',
+    clearer  => 1,
+    trigger  => sub {
         my ($self, $basename) = @_;
 
-        carp "Attribute basename must be a Str" if ref $basename;
+        carp "Attribute basename must be a Str"
+          if ref $basename;
 
         $self->_set_param(['basename', $basename]);
     },
+);
+
+# trigger these as well? Gut says no
+has analysis_version => (
+    is      => 'rw',
+    clearer => 1,
+    default => sub {
+        return {
+            latest   => true,
+            # major    => ANALYSIS_MAJOR,
+            # minor    => ANALYSIS_MINOR,
+            # patch    => ANALYSIS_PATCH,
+            # revision => ANALYSIS_REVISION,
+        }
+    }, 
+);
+
+has analysis_type => (
+    is      => 'rw',
+    clearer => 1,
+    default => sub { 'transcribe-raw-speech' },
 );
 
 sub _build_base       { return URI->new(BASE_URL) }
@@ -189,9 +213,12 @@ sub _get_scope { return join ' ', shift->scope }
 sub _set_param {
     my ($self, $param) = @_;
 
-    my $params = decode_json($self->params);
+    my $params = decode_json($self->params)
+      if $self->params and !ref $self->params;
 
-    my ($key, $val) = $param->[0], $param->[1];
+    $params ||= +{};
+
+    my ($key, $val) = ($param->[0], $param->[1]);
     $params->{$key} = $val;
 
     $self->params($params);
@@ -258,12 +285,14 @@ sub audio_to_text {
 
     $audio_id ||= $self->audio_id;
 
-    $self->list_analysis({
+    $self->get_analysis({
         analysis  => {
             audio => {
                 _id => $audio_id,
-            }
-        }
+            },
+            type    => $self->analysis_type,
+            version => $self->analysis_version,
+        },
     });
 
     return $self->_extract_audio_text;
@@ -312,7 +341,7 @@ sub operation_to_text {
 
     carp "Missing operation_id" unless $op_id;
 
-    $self->get_operation({
+    my $c = $self->get_operation({
         operation => {
             _id => $op_id,
         },
@@ -320,6 +349,9 @@ sub operation_to_text {
 
     my $content = $self->content;
     my $params  = $content->{operation}->{parameters};
+
+    carp "Missing audio_id, cannot convert operation to text"
+      unless defined $params->{audio_id};
 
     return $self->audio_to_text($params->{audio_id});
 }

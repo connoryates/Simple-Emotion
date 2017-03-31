@@ -12,9 +12,9 @@ use constant _ROUTE => '/speech/v0';
 has transcribe_endpoint => ( is => 'rw', default => sub { '/transcribe' } );
 has detect_endpoint     => ( is => 'rw', default => sub { '/detect'     } );
 
-our @SPEECH_METHODS = qw(transcribe detect);
+my @methods = qw(transcribe detect);
 
-around @SPEECH_METHODS => sub {
+around @methods => sub {
     my ($orig, $self, $params) = @_;
 
     $self->route(_ROUTE);

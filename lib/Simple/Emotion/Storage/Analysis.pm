@@ -9,9 +9,9 @@ use Simple::Emotion::Constants;
 
 use constant _ROUTE => '/storage/v0/analysis';
 
-our @ANALYSIS_METHODS = qw(list_analysis get_analysis remove_analysis rename_analysis);
+my @methods = qw(list_analysis get_analysis remove_analysis rename_analysis);
 
-around @ANALYSIS_METHODS => sub {
+around @methods => sub {
     my ($orig, $self, $params) = @_;
 
     $self->route(_ROUTE);
