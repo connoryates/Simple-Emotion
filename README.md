@@ -15,6 +15,7 @@ Simple::Emotion - Client for api.simpleemotion.com.
     $emotion->authorize;
     $emotion->scope('transcription');
 
+    # Create an audio folder to hold your recordings
     $emotion->add_folder({
         folder => {
             basename => 'my_voicemail_folder',
@@ -31,7 +32,7 @@ Simple::Emotion - Client for api.simpleemotion.com.
         },
     });
 
-    # Create an audio folder to hold your recording
+    # Create an audio file
     $emotion->add_audio({
         folder => {
             basename => 'voicemail_1.mp3',
