@@ -235,8 +235,6 @@ sub make_request {
 
     my $content;
     try {
-        use Data::Dumper;
-        print Dumper $self->http_request;
         my $resp = $self->request($self->http_request);
 
         die $resp->content unless $resp->is_success;
@@ -315,16 +313,12 @@ sub transload_audio {
 
     $basename ||= $self->basename;
 
-    try {
-        $self->add_audio({
-            audio => {
-                basename => $basename,
-            },
-            destination => $payload,
-        });
-    } catch {
-        carp "Failed to add audio: $_";
-    };
+    $self->add_audio({
+        audio => {
+            basename => $basename,
+        },
+        destination => $payload,
+    });
 
     carp "Missing audio_id" unless $self->audio_id;
 
@@ -408,7 +402,7 @@ sub _set_id {
 
         if ($self->can($type_id)) {
             # Set each ID type after response
-            $self->$type_id($v->{_id});
+            $self->$type_id($v->{_id}) if defined $v->{_id};
         }
     }
 
