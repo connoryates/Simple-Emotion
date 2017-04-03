@@ -9,9 +9,9 @@ use Simple::Emotion::Constants;
 
 use constant _ROUTE => '/operations/v0';
 
-our @OPERATION_METHODS = qw(get_operation list_operations remove_operation);
+my @methods = qw(get_operation list_operations remove_operation);
 
-around @OPERATION_METHODS => sub {
+around @methods => sub {
     my ($orig, $self, $params) = @_;
 
     $self->route(_ROUTE);
