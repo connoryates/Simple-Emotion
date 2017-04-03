@@ -17,15 +17,15 @@ my $emotion = Simple::Emotion->new(
 
 $emotion->add_audio({
     audio => {
-        basename => 'test_diarized_metadata_14.wav',
+        basename => 'test_diarized_metadata_16.wav',
         metadata => {
             speakers => [
                 {
-                    _id  => "14",
+                    _id  => "18",
                     role => 'agent',
                 },
                 {
-                    _id  => "15",
+                    _id  => "19",
                     role => 'customer',
                 },
             ],
@@ -33,7 +33,7 @@ $emotion->add_audio({
     },
     destination => {
         folder => {
-            _id => '58d95ccfaeb1a506c3530a12',
+            _id => '58d95c70aeb1a506c3530a0f',
         }
     }
 });

@@ -15,12 +15,12 @@ my $emotion = Simple::Emotion->new(
     pre_auth => 1,
 );
 
-print Dumper $emotion->list_analysis;
-#    analysis  => {
-#        audio => {
-#            _id => $id,
-#        },
-#    },
-#});
+print Dumper $emotion->list_analysis({
+    analysis  => {
+        audio => {
+            _id => $id,
+        },
+    },
+});
 
 exit(0);

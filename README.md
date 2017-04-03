@@ -100,6 +100,8 @@ Simple::Emotion - Client for api.simpleemotion.com.
     });
     
     my $audio_id = $op->{audio}->{_id};
+    # OR
+    $audio_id = $emotion->audio_id;
     
     # Convert analyses to text
     my $transcription = $emotion->audio_to_text($audio_id);
@@ -368,6 +370,15 @@ Add an audio file and upload a recording url in one method:
         url  => 'https://your-recording-url',
         name => $RECORDING_NAME,
     });
+```
+
+## transcribe_operation
+
+After transloading an audio file, use the operation ID from the webhook
+to start a transcription job. Your app's webhook can be as simple as:
+
+```perl
+    $emotion->transcribe_operation($operation_id);
 ```
 
 ## audio_to_text

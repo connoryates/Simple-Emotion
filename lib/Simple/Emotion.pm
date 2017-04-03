@@ -54,7 +54,6 @@ has scope => (
 # API Specific parameters
 has audio_id     => ( is => 'rw' );
 has folder_id    => ( is => 'rw' );
-# has no_params    => ( is => 'rw', clearer => 1 );
 has operation_id => ( is => 'rw' );
 
 # HTTP request details
@@ -96,6 +95,8 @@ has callback_url => (
         carp "Attribute callback_url must be a string"
           if ref $url;
 
+        my $params = decode_json($self->params || '{}');
+
         $params->{operation}->{callbacks}->{completed}->{url} = $url;
         $self->params($params);
     }
@@ -109,8 +110,10 @@ has callback_secret => (
         carp "Attribute callback_secret must be a string"
           if ref $secret;
 
-        $params->{operation}->{callbacks}->{completed}->{url} = $secret;
-        $self->_set_param(['operation', $data]);
+        my $params = decode_json($self->params || '{}');
+
+        $params->{operation}->{callbacks}->{completed}->{secret} = $secret;
+        $self->params($params);
     }
 );
 
@@ -156,15 +159,7 @@ has basename => (
 has analysis_version => (
     is      => 'rw',
     clearer => 1,
-    default => sub {
-        return {
-            latest   => true,
-            # major    => ANALYSIS_MAJOR,
-            # minor    => ANALYSIS_MINOR,
-            # patch    => ANALYSIS_PATCH,
-            # revision => ANALYSIS_REVISION,
-        }
-    }, 
+    default => sub { +{ latest => true } }, 
 );
 
 has analysis_type => (
@@ -172,6 +167,8 @@ has analysis_type => (
     clearer => 1,
     default => sub { 'transcribe-raw-speech' },
 );
+
+has diarized => ( is => 'rw', clearer => 1, default => sub { false } );
 
 sub _build_base       { return URI->new(BASE_URL) }
 sub _build_user_agent { return Furl->new }
@@ -254,7 +251,8 @@ sub make_request {
     $self->content($content);
 
     # No ID returned from OAuth request
-    $self->_set_id unless caller[0] =~ /OAuth$/;
+    my $caller = caller;
+    $self->_set_id unless $caller =~ /OAuth$/;
 
     return $content;
 }
@@ -287,24 +285,46 @@ sub audio_to_text {
 }
 
 sub transload_audio {
-    my ($self, $url) = @_;
+    my ($self, $input) = @_;
 
-    # TODO: handle HASH input with name and service input,
-    # use folder_id attribute as fall back
+    my $url = ref $input ? $input->{url} : $input;
 
-    carp "Missing url" unless $url;
-    carp "Missing folder_id" unless $self->folder_id;
+    carp "Missing url" unless defined $url;
 
-    $self->add_audio({
-        folder => {
-            basename => $self->basename,
-        }, 
-        destination => {
+    my ($payload, $basename);
+    if (ref $input and $input->{name} and $input->{service}) {
+        $payload = {
+            folder => {
+                name    => $input->{folder_name},
+                service => $input->{service},
+            }
+        };
+
+        $basename = $input->{basename} if defined $input->{basename};
+    }
+    elsif (!ref $input and $self->folder_id) {
+        $payload = {
             folder  => {
                 _id => $self->folder_id,
             },
         },
-    });
+    }
+    else {
+        carp "Missing folder_id, or name and service";
+    }
+
+    $basename ||= $self->basename;
+
+    try {
+        $self->add_audio({
+            audio => {
+                basename => $basename,
+            },
+            destination => $payload,
+        });
+    } catch {
+        carp "Failed to add audio: $_";
+    };
 
     carp "Missing audio_id" unless $self->audio_id;
 
@@ -332,14 +352,7 @@ sub operation_to_text {
 
     carp "Missing operation_id" unless $op_id;
 
-    my $c = $self->get_operation({
-        operation => {
-            _id => $op_id,
-        },
-    });
-
-    my $content = $self->content;
-    my $params  = $content->{operation}->{parameters};
+    my $params = $self->_operation_params($op_id);
 
     carp "Missing audio_id, cannot convert operation to text"
       unless defined $params->{audio_id};
@@ -347,10 +360,47 @@ sub operation_to_text {
     return $self->audio_to_text($params->{audio_id});
 }
 
+sub transcribe_operation {
+    my ($self, $op_id) = @_;
+
+    carp "Missing operation_id" unless $op_id;
+
+    my $params = $self->_operation_params($op_id);
+
+    carp "Missing audio_id, cannot convert transcribe audio"
+      unless defined $params->{audio_id};
+
+    return $self->transcribe({
+        audio => {
+            _id => $params->{audio_id},
+        },
+        diarized  => $self->diarized,
+        operation => {
+            callbacks => {
+                completed  => {
+                    url    => $self->callback_url,
+                    secret => $self->callback_secret,
+                }
+            }
+        }
+    });
+}
+
+sub _operation_params {
+    my ($self, $op_id) = @_;
+
+    $self->get_operation({
+        operation => {
+            _id => $op_id,
+        },
+    });
+
+    return $self->content->{operation}->{parameters};
+}
+
 sub _set_id {
     my $self = shift;
 
-    my $id      = $self->id;
     my $content = $self->content;
 
     while (my ($k, $v) = each %$content) {
@@ -358,8 +408,7 @@ sub _set_id {
 
         if ($self->can($type_id)) {
             # Set each ID type after response
-            $self->$type_id($id);
-            last;
+            $self->$type_id($v->{_id});
         }
     }
 
@@ -370,23 +419,42 @@ sub _extract_audio_text {
     my $self = shift;
 
     my $content  = $self->content or carp "Cannot get audio text - no content returned";
-    my $analyses = $content->{analyses};
-
-    use Data::Dumper;
-    print Dumper $content;
+    my $analyses = $content->{analyses} || $content->{analysis};
 
     carp "Missing analyses" unless $analyses;
+    carp "Unsupported data structure" unless ref $analyses;
 
-    my @words = ();
-    foreach my $analysis (@$analyses) {
-        my $data = $analysis->{data};
+    if (ref $analyses eq 'HASH') {
+        return join ' ', @{ $self->__extract_audio_text($analyses) };
+    }
+    elsif (ref $analyses eq 'ARRAY') {
+        my @words = ();
 
-        foreach my $t (@{ $data->{turns} }) {
-            push @words, map { $_->{word} } @{ $t->{words} };
+        for my $analysis (@$analyses) {
+            push @words, $self->__extract_audio_text($analysis);
         }
+
+        return join ' ', @words;
     }
 
-    return join ' ', @words;
+    cluck "Unsupported data structure found: " . ref $analyses;
+
+    return;
+}
+
+sub __extract_audio_text {
+    my ($self, $analysis) = @_;
+
+    return unless $analysis;
+
+    my $data = $analysis->{data};
+
+    my @words = ();
+    for my $t (@{ $data->{turns} }) {
+        push @words, map { $_->{word} } @{ $t->{words} };
+    }
+
+    return \@words;
 }
 
 sub _create_request {
@@ -448,6 +516,7 @@ sub _clean_up {
     $self->clear_no_auth;
     $self->clear_content;
     $self->clear_tags;
+    $self->clear_diarized;
 }
 
 1;
